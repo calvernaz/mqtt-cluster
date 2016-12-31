@@ -31,6 +31,12 @@ Setup your host to point towards the leader node
 eval "$(docker-machine env node-1)"
 ```
 
+Quick check everything is up and running
+
+```sh
+docker node list
+```
+
 Create the overlay network
 
 ```sh
@@ -40,7 +46,9 @@ docker network create --driver overlay olnet
 Create the service
 
 ```sh
-docker service create --with-registry-auth --name mosquitto --network olnet --mount type=volume,source=data,target=/mosquitto/data  --mount type=volume,source=log,target=/mosquitto/log -p mode=ingress,target=1883,published=1883,protocol=tcp registry.livesense.com.au:5000/mosquitto-swarm:1.4.8
+docker login ...
+
+docker service create --with-registry-auth --name mosquitto --network olnet --mount type=volume,source=data,target=/mosquitto/data  --mount type=volume,source=log,target=/mosquitto/log -p mode=ingress,target=1883,published=1883,protocol=tcp private.reoi:5000/mosquitto-swarm:1.4.8
 ```
 
 Scale for 5 replicas and check where they running
