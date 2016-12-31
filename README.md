@@ -53,6 +53,5 @@ docker service scale mosquitto=5
 docker service ps mosquitto
 ```
 
-
 ```docker service ps --no-trunc mosquitto```
 ```docker service inspect --pretty mosquitto```
