@@ -48,7 +48,8 @@ Create the service
 ```sh
 docker login ...
 
-docker service create --with-registry-auth --name mosquitto --network olnet --mount type=volume,source=data,target=/mosquitto/data  --mount type=volume,source=log,target=/mosquitto/log -p mode=ingress,target=1883,published=1883,protocol=tcp private.reoi:5000/mosquitto-swarm:1.4.8
+docker service create --with-registry-auth --name mosquitto --network olnet \
+-p mode=ingress,target=1883,published=1883,protocol=tcp private.reoi:5000/mosquitto-swarm:1.4.8
 ```
 
 Scale for 5 replicas and check where they running
