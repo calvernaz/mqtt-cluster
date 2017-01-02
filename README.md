@@ -65,7 +65,7 @@ docker service ps mosquitto
 ```docker service ps --no-trunc mosquitto```
 ```docker service inspect --pretty mosquitto```
 
-## AWS
+## AWS Cluster Deploy
 
 ## Prerequisites
 
@@ -111,16 +111,21 @@ $ ZONE=b # the zone to use
 Create the docker swarm manager node first.
 
 ```sh
-docker-machine create -d amazonec2 --amazonec2-vpc-id $VPC --amazonec2-region $REGION --amazonec2-zone $ZONE --amazonec2-instance-type t2.micro --amazonec2-subnet-id $SUBNET --amazonec2-security-group mqtt-cluster mqtt-cluster-manager
+docker-machine create -d amazonec2 --amazonec2-vpc-id $VPC --amazonec2-region $REGION \
+--amazonec2-zone $ZONE --amazonec2-instance-type t2.micro --amazonec2-subnet-id $SUBNET \
+--amazonec2-security-group mqtt-cluster mqtt-cluster-manager
 ```
 
 Create the two worker nodes. You can run these commands in parallel with the first one.
 
-
 ```sh
-docker-machine create -d amazonec2 --amazonec2-vpc-id $VPC --amazonec2-region $REGION --amazonec2-zone $ZONE --amazonec2-instance-type t2.micro --amazonec2-subnet-id $SUBNET --amazonec2-security-group mqtt-cluster mqtt-cluster-node1
+docker-machine create -d amazonec2 --amazonec2-vpc-id $VPC --amazonec2-region $REGION \
+--amazonec2-zone $ZONE --amazonec2-instance-type t2.micro --amazonec2-subnet-id $SUBNET \
+--amazonec2-security-group mqtt-cluster mqtt-cluster-node1
 
-docker-machine create -d amazonec2 --amazonec2-vpc-id $VPC --amazonec2-region $REGION --amazonec2-zone $ZONE --amazonec2-instance-type t2.micro --amazonec2-subnet-id $SUBNET --amazonec2-security-group mqtt-cluster mqtt-cluster-node2
+docker-machine create -d amazonec2 --amazonec2-vpc-id $VPC --amazonec2-region $REGION \
+--amazonec2-zone $ZONE --amazonec2-instance-type t2.micro --amazonec2-subnet-id $SUBNET \
+--amazonec2-security-group mqtt-cluster mqtt-cluster-node2
 ```
 
 Get the internal IP address of the swarm manager.
@@ -232,13 +237,16 @@ OA
 ```sh
 
 ELB_SECURITY_GROUP=sg-xxxx
-aws ec2 authorize-security-group-ingress --group-id $ELB_SECURITY_GROUP --protocol tcp --port 1883 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id $ELB_SECURITY_GROUP --protocol tcp \
+--port 1883 --cidr 0.0.0.0/0
 ```
 
 Create balancer creation
 
 ```sh
-aws elb create-load-balancer --load-balancer-name mqtt-elb --listeners "Protocol=TCP,LoadBalancerPort=1883,InstanceProtocol=TCP,InstancePort=1883" --subnets $SUBNET --security-groups $ELB_SECURITY_GROUP
+aws elb create-load-balancer --load-balancer-name mqtt-elb \
+--listeners "Protocol=TCP,LoadBalancerPort=1883,InstanceProtocol=TCP,InstancePort=1883" \
+--subnets $SUBNET --security-groups $ELB_SECURITY_GROUP
 ```
 
 Link the ELB to the cluster,
@@ -254,7 +262,8 @@ ELB2MQTT_SECURITY_GROUP=sg-xxxxx
 With the security GroupId output:
 
 ```sh
-aws ec2 authorize-security-group-ingress --group-id $ELB2MQTT_SECURITY-GROUP --protocol tcp --port 1883 --source-group $ELB_SECURITY_GROUP
+aws ec2 authorize-security-group-ingress --group-id $ELB2MQTT_SECURITY-GROUP --protocol tcp \
+--port 1883 --source-group $ELB_SECURITY_GROUP
 ```
 
 Now we register to load balancer to the cluster instances:
@@ -276,7 +285,10 @@ aws ec2 modify-instance-attribute --instance-id i-xxxx --groups ELB2MQTT_SECURIT
 - Register:
 
 ```sh
-aws elb register-instances-with-load-balancer --load-balancer-name mqtt-elb --instances i-072d4516a112d4b69 i-02d45b0903ff1e537 i-035f68e31abb6d663
+aws elb register-instances-with-load-balancer --load-balancer-name mqtt-elb --instances i-xxxx i-xxx i-xxxx
 ```
 
 - After a few seconds check if the instances state are in `InService` state
+
+
+## Test MQTT Pub/Sub
