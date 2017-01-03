@@ -1,3 +1,19 @@
+## Secure Mosquitto Broker
+
+Create a file (under `mosquitto-docker/mosquitto/passwd/`) called `pwdfile` with an username and password (`username:password`)
+
+```sh
+foo:foobar
+```
+
+Now hash the password using `mosquitto_passwd`
+
+```sh
+mosquitto_passwd -U passwd
+```
+
+The file would be updated and included in the image.
+
 ## Docker
 
 Build the docker image with mosquitto
