@@ -1,5 +1,8 @@
 ## Secure Mosquitto Broker
 
+
+### Create Password File
+
 Create a file (under `mosquitto-docker/mosquitto/passwd/`) called `pwdfile` with an username and password (`username:password`)
 
 ```sh
@@ -32,81 +35,40 @@ docker run -d -it -p 1883:1883 --name mosquitto \
 	   mosquitto:1.4.8
 ```
 
-
-## Docker Swarm
-
-Run the create swarm cluster script
-
-```sh
-./create-swarm.sh
-```
-
-Setup your host to point towards the leader node
-
-```sh
-eval "$(docker-machine env node-1)"
-```
-
-Quick check everything is up and running
-
-```sh
-docker node list
-```
-
-Create the overlay network
-
-```sh
-docker network create --driver overlay olnet
-```
-
-Create the service
-
-```sh
-docker login ...
-
-docker service create --with-registry-auth --name mosquitto --network olnet \
--p mode=ingress,target=1883,published=1883,protocol=tcp private.registry:5000/mosquitto-swarm:1.4.8
-```
-
-Scale for 5 replicas and check where they running
-
-```sh
-docker service scale mosquitto=5
-```
-
-```sh
-docker service ps mosquitto
-```
-
-```docker service ps --no-trunc mosquitto```
-```docker service inspect --pretty mosquitto```
-
 ## AWS Cluster Deploy
 
 ## Prerequisites
 
 You need a few things already prepared in order to get started. You need at least Docker 1.12 set up. I was using the stable version of Docker for mac for preparing this guide.
-```
+
+```sh
 $ docker --version
 Docker version 1.12.0, build 8eab29e
 ```
+
 You also need Docker machine installed.
-```
+
+```sh
 $ docker-machine --version
 docker-machine version 0.8.0, build b85aac1
 ```
+
 You need an AWS account. Either you should have you `credentials` file filled:
-```
+
+```sh
 $ cat ~/.aws/credentials
 [default]
 aws_access_key_id =
 aws_secret_access_key =
 ```
+
 Or you need to export these variables before going forward.
+
 ```
 $ export AWS_ACCESS_KEY_ID=
 $ export AWS_SECRET_ACCESS_KEY=
 ```
+
 Also, you should have AWS CLI installed.
 ```
 $ aws --version
@@ -151,102 +113,56 @@ Get the internal IP address of the swarm manager.
 ```
 
 Keep track of that IP address. Mine was `172.30.0.175`.
-
-Point your docker client to the swarm manager.
-
-```sh
-eval $(docker-machine env mqtt-cluster-manager)
-```
-
-Initialize Swarm mode.
-
-```sh
-docker swarm init --advertise-addr 172.30.0.175
-```
-
-This should output a command which you can use to join on the workers
-
-```sh
-docker swarm join --token TOKEN 172.30.0.175:2377
-```
-
-Modify the security group to allow the swarm communication (this is necessary because Docker Machine as of today does not support the new Swarm mode so it doesn't open the right ports)
-
-```sh
-aws ec2 describe-security-groups --filter "Name=group-name,Values=mqtt-cluster"
-```
-
-From this command you should get all the details of the security group. Including the GroupId. Copy that information and run the following commands:
-
-```sh
-SECURITY_GROUP_ID=sg-XXXXXXX
-```
-
-Then,
-
-```sh
-aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 2377 --source-group $SECURITY_GROUP_ID
-aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 7946 --source-group $SECURITY_GROUP_ID
-aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol udp --port 7946 --source-group $SECURITY_GROUP_ID
-aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 4789 --source-group $SECURITY_GROUP_ID
-aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol udp --port 4789 --source-group $SECURITY_GROUP_ID
-```
-
-Now it's time to make the other nodes join the cluster:
-
-```sh
-eval $(docker-machine env mqtt-cluster-node1)
-```
-
-Run the join command in both nodes, so repeat the command above for the two other nodes (node1, node2)
-
-```sh
-docker swarm join --token SWMTKN-1-xxxx 172.30.0.175:2377
-```
-
-Finally, check how your cluster looks like:
+Point your docker client to the cluster manager.
 
 ```sh
 eval $(docker-machine env mqtt-cluster-manager)
-
-docker node ls
 ```
 
 ## MQTT Cluster
 
+### Network
 
-Create an overlay network,
-
-```sh
-docker network create --driver overlay olnet
-```
-
-Run the service, don't forget to rename the private registry
+Start by listing your VPC instances:
 
 ```sh
-docker service create --with-registry-auth --name mosquitto --network olnet -p mode=ingress,target=1883,published=1883,protocol=tcp private.registry:5000/mosquitto-swarm:1.4.8
+aws ec2 describe-instances --filters Name=vpc-id,Values=$VPC
 ```
 
-Check if it is running,
+We will allocate addresses to reach each machine, remember this:
 
 ```sh
- docker service ls
+When an EC2 instance queries the external DNS name of an Elastic IP, the EC2 DNS server returns the internal IP address of the instance to which the Elastic IP address is currently assigned.
 ```
 
-Then spawn 3 replicas,
+Let's start with the cluster manager machine:
+
+- Allocate an address, will return an allocation id and the public IP
+- Then allocate that address to the instance
 
 ```sh
-docker service scale mosquitto=3
+eval $(docker-machine env mqtt-cluster-manager)
+
+aws ec2 allocate-address --domain vpc
+
+aws ec2 associate-address --allocation-id eipalloc-xxxx --instance-id i-xxxxxxx
 ```
 
-## Load Balancer
+Repeat to the other 2 instances. Don't forget to change the instance id and allocation id.
+
+
+### Configure MQTT brokers
+
+
+
+
+### Load Balancer
 
 Create a new security group, open mosquitto port to the world
 
 ```sh
 aws ec2 create-security-group --group-name mqtt-elb-sec --description "MQTT ELB SecGroup" --vpc-id $VPC
 ```
-
 
 It outputs a new group id, that is input for the security group ingress
 OA
