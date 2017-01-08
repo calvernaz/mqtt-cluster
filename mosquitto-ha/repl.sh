@@ -6,19 +6,22 @@ __base="$(basename ${__file} .sh)"
 
 
 MOSQUITTO_CONF=mosquitto.conf
-BROKER_NODES=(node-1 node-2)
+BROKER_NODES=(bridge node-1 node-2)
 REPLACE_BRIDGE_ADDR=BRIDGE_ADDRESS
 REPLACE_BRIDGE_PASSWD=password
-MOSQUITTO_PASSWD=$(which mosquitto_passwd)
 
+# Tools
+MOSQUITTO_PASSWD_CMD=$(which mosquitto_passwd)
+DOCKER_CMD=$(which docker)
 
 usage() {
-  echo "$__base [-h] [-r] [-u] [-p]"
+  echo "$__base [-h] [-r] [-u] [-p] [-b]"
   echo ""
   echo "  -h                  print this message"
   echo "  -r  <public-ip>     replace bridge address with IP address"
+  echo "  -p  <password>      replace remote bridge password"
   echo "  -u                  update the file with hashed password"
-  echo "  -p                  replace remote bridge password"
+  echo "  -b  <registry>      build the docker images (all)"
   echo ""
   exit 1
 }
@@ -37,6 +40,11 @@ repl_bridge_addr() {
 }
 
 repl_passwd_file() {
+	if [ -z "$MOSQUITTO_PASSWD" ]; then
+			echo "mosquitto_passwd is not available"
+			exit 2
+	fi
+
 	for i in ${BROKER_NODES[@]}; do
 		echo "Replacing ${i}/pwfile"
 		$MOSQUITTO_PASSWD -U "${i}/pwfile"
@@ -52,13 +60,25 @@ repl_bridge_passwd() {
 		fi
 
 		echo "Replacing" ${i}/$MOSQUITTO_CONF
-		sed -i "" "s/${REPLACE_BRIDGE_PASSWD}/${replace}/g" ${i}/$MOSQUITTO_CONF
+		sed -i "" -E "s/${REPLACE_BRIDGE_PASSWD}\$/${replace}/g" ${i}/$MOSQUITTO_CONF
+	done
+}
+
+build_docker_images() {
+	local registry=$2
+
+	if [ -z "$DOCKER_CMD" ]; then
+			echo "docker is not available"
+			exit 2
+	fi
+
+	for i in ${BROKER_NODES[@]}; do
+		sh ${i}/build.sh $registry
 	done
 }
 
 
-
-while getopts ":r:ph" opt; do
+while getopts ":r:buhp:" opt; do
 	case ${opt} in
 		h)
 			usage
@@ -70,11 +90,10 @@ while getopts ":r:ph" opt; do
 			repl_bridge_passwd $*
 			;;
 		u)
-			if [ -z "$MOSQUITTO_PASSWD" ]; then
-					echo "mosquitto_passwd is not available"
-					exit 2
-			fi
-			repl_passwd_file $opt
+			repl_passwd_file $*
+			;;
+		b)
+			build_docker_images $*
 			;;
 		\?)
 			echo "Invalid option: -$OPTARG" >&2
