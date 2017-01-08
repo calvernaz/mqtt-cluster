@@ -153,8 +153,53 @@ Repeat to the other 2 instances. Don't forget to change the instance id and allo
 
 ### Configure MQTT brokers
 
+Now, it's time to create three images, one acts as a bridge while the other two brokers connect to the bridge, in that so any client message will be propagated through the bridge to the other brokers.
+
+First let's configure the mosquitto docker images,
+
+```sh
+./repl.sh -r 52.X.X.X
+
+./repl.sh -u
+
+./repl.sh -p <remote.bridge.password>
+```
+
+Then build them,
+
+```sh
+./repl.sh -b your.registry:5000
+```
+
+At this stage everything should be ready for deployment in our ec2 cluster.
+
+- Bridge
+
+```sh
+eval $(docker-machine env mqtt-cluster-manager)
+
+docker run -d  --restart=always -p 1883:1883 --name mosquitto-bridge registry.livesense.com.au:5000/mosquitto-bridge-ha:1.4.8
+```
+
+- Node 1
+
+```sh
+eval $(docker-machine env mqtt-cluster-node1)
+
+docker run -d  --restart=always -p 1883:1883 --name mosquitto-broker-1 registry.livesense.com.au:5000/mosquitto-broke\
+r-1:1.4.8
+```
+
+- Node 2
+
+```sh
+eval $(docker-machine env mqtt-cluster-node2)
+
+docker run -d  --restart=always -p 1883:1883 --name mosquitto-broker-2 registry.livesense.com.au:5000/mosquitto-broker-2:1.4.8
+```
 
 
+Note: The script doesn't apply to second runs. Revert previous changes and run the script again.
 
 ### Load Balancer
 
