@@ -28,7 +28,7 @@ usage() {
 
 repl_bridge_addr() {
     local replace=$2
-	echo "$*"
+
 	for i in ${BROKER_NODES[@]}; do
 		if [ ! -f ${i}/$MOSQUITTO_CONF ]; then
 				echo "File not found!"
@@ -40,14 +40,14 @@ repl_bridge_addr() {
 }
 
 repl_passwd_file() {
-	if [ -z "$MOSQUITTO_PASSWD" ]; then
+	if [ -z "$MOSQUITTO_PASSWD_CMD" ]; then
 			echo "mosquitto_passwd is not available"
 			exit 2
 	fi
 
 	for i in ${BROKER_NODES[@]}; do
 		echo "Replacing ${i}/pwfile"
-		$MOSQUITTO_PASSWD -U "${i}/pwfile"
+		$MOSQUITTO_PASSWD_CMD -U "${i}/pwfile"
 	done
 }
 
@@ -73,6 +73,7 @@ build_docker_images() {
 	fi
 
 	for i in ${BROKER_NODES[@]}; do
+		echo "Building" ${i} "image"
 		sh ${i}/build.sh $registry
 	done
 }

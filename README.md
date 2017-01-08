@@ -86,7 +86,7 @@ $ ZONE=b # the zone to use
 
 ### Steps
 
-Create the docker swarm manager node first.
+Create the manager node first.
 
 ```sh
 docker-machine create -d amazonec2 --amazonec2-vpc-id $VPC --amazonec2-region $REGION \
@@ -106,7 +106,7 @@ docker-machine create -d amazonec2 --amazonec2-vpc-id $VPC --amazonec2-region $R
 --amazonec2-security-group mqtt-cluster mqtt-cluster-node2
 ```
 
-Get the internal IP address of the swarm manager.
+Get the internal IP address of the manager.
 
 ```sh
  docker-machine ssh mqtt-cluster-manager ip addr show eth0
@@ -119,7 +119,7 @@ Point your docker client to the cluster manager.
 eval $(docker-machine env mqtt-cluster-manager)
 ```
 
-## MQTT Cluster
+## MQTT HA
 
 ### Network
 
@@ -132,7 +132,9 @@ aws ec2 describe-instances --filters Name=vpc-id,Values=$VPC
 We will allocate addresses to reach each machine, remember this:
 
 ```sh
-When an EC2 instance queries the external DNS name of an Elastic IP, the EC2 DNS server returns the internal IP address of the instance to which the Elastic IP address is currently assigned.
+When an EC2 instance queries the external DNS name of an Elastic IP, \
+the EC2 DNS server returns the internal IP address of the instance \
+to which the Elastic IP address is currently assigned.
 ```
 
 Let's start with the cluster manager machine:
@@ -148,7 +150,7 @@ aws ec2 allocate-address --domain vpc
 aws ec2 associate-address --allocation-id eipalloc-xxxx --instance-id i-xxxxxxx
 ```
 
-Repeat to the other 2 instances. Don't forget to change the instance id and allocation id.
+Don't forget to change the instance id and allocation id.
 
 
 ### Configure MQTT brokers
@@ -178,7 +180,8 @@ At this stage everything should be ready for deployment in our ec2 cluster.
 ```sh
 eval $(docker-machine env mqtt-cluster-manager)
 
-docker run -d  --restart=always -p 1883:1883 --name mosquitto-bridge registry.livesense.com.au:5000/mosquitto-bridge-ha:1.4.8
+docker run -d  --restart=always -p 1883:1883 --name mosquitto-bridge \
+registry.livesense.com.au:5000/mosquitto-bridge-ha:1.4.8
 ```
 
 - Node 1
@@ -186,8 +189,8 @@ docker run -d  --restart=always -p 1883:1883 --name mosquitto-bridge registry.li
 ```sh
 eval $(docker-machine env mqtt-cluster-node1)
 
-docker run -d  --restart=always -p 1883:1883 --name mosquitto-broker-1 registry.livesense.com.au:5000/mosquitto-broke\
-r-1:1.4.8
+docker run -d  --restart=always -p 1883:1883 --name mosquitto-broker-1 \
+registry.livesense.com.au:5000/mosquitto-broker-1:1.4.8
 ```
 
 - Node 2
@@ -195,9 +198,9 @@ r-1:1.4.8
 ```sh
 eval $(docker-machine env mqtt-cluster-node2)
 
-docker run -d  --restart=always -p 1883:1883 --name mosquitto-broker-2 registry.livesense.com.au:5000/mosquitto-broker-2:1.4.8
+docker run -d  --restart=always -p 1883:1883 --name mosquitto-broker-2 \
+registry.livesense.com.au:5000/mosquitto-broker-2:1.4.8
 ```
-
 
 Note: The script doesn't apply to second runs. Revert previous changes and run the script again.
 

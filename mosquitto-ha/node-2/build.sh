@@ -2,6 +2,8 @@
 
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+registry=$1
+
 docker build -t mosquitto-broker-2:1.4.8 $__dir
-docker tag mosquitto-broker-2:1.4.8 $1/mosquitto-broker-2:1.4.8
-docker push $1/mosquitto-broker-2:1.4.8
+docker tag mosquitto-broker-2:1.4.8 $registry/mosquitto-broker-2:1.4.8
+docker push $registry/mosquitto-broker-2:1.4.8
