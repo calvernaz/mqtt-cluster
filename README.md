@@ -160,7 +160,7 @@ Now, it's time to create three images, one acts as a bridge while the other two 
 First let's configure the mosquitto docker images,
 
 ```sh
-./repl.sh -r 52.X.X.X
+./repl.sh -r 52.X.X.X 52.Z.Z.Z
 
 ./repl.sh -u
 

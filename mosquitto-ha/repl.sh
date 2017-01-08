@@ -27,7 +27,8 @@ usage() {
 }
 
 repl_bridge_addr() {
-    local replace=$2
+	shift 1
+    local replace=$*
 
 	for i in ${BROKER_NODES[@]}; do
 		if [ ! -f ${i}/$MOSQUITTO_CONF ]; then
