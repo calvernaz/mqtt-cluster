@@ -167,7 +167,9 @@ First let's configure the mosquitto docker images,
 ./repl.sh -p <remote.bridge.password>
 ```
 
-Then build them,
+Then build them.
+You might need to run in a new shell, the docker host might be polluted with remote env.
+
 
 ```sh
 ./repl.sh -b your.registry:5000

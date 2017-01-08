@@ -45,9 +45,11 @@ repl_passwd_file() {
 			exit 2
 	fi
 
+	$MOSQUITTO_PASSWD_CMD -U pwfile
+
 	for i in ${BROKER_NODES[@]}; do
-		echo "Replacing ${i}/pwfile"
-		$MOSQUITTO_PASSWD_CMD -U "${i}/pwfile"
+		echo "Copying ${i}/pwfile"
+		cp pwfile ${i}/
 	done
 }
 

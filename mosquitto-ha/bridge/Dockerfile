@@ -10,8 +10,6 @@ RUN apk --no-cache --update add mosquitto=1.4.8-r2 && \
 COPY mosquitto.conf /mosquitto/config/
 COPY pwfile /etc/mosquitto/
 
-RUN mosquitto_passwd -U /etc/mosquitto/pwfile
-
 WORKDIR /mosquitto
 
 CMD ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
